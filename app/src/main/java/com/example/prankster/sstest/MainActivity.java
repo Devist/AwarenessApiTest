@@ -25,9 +25,13 @@ import logger.LogFragment;
 import com.google.android.gms.awareness.Awareness;
 import com.google.android.gms.awareness.fence.AwarenessFence;
 import com.google.android.gms.awareness.fence.DetectedActivityFence;
+import com.google.android.gms.awareness.fence.FenceQueryRequest;
+import com.google.android.gms.awareness.fence.FenceQueryResult;
 import com.google.android.gms.awareness.fence.FenceState;
+import com.google.android.gms.awareness.fence.FenceStateMap;
 import com.google.android.gms.awareness.fence.FenceUpdateRequest;
 import com.google.android.gms.awareness.fence.HeadphoneFence;
+import com.google.android.gms.awareness.fence.LocationFence;
 import com.google.android.gms.awareness.snapshot.DetectedActivityResult;
 import com.google.android.gms.awareness.snapshot.HeadphoneStateResult;
 import com.google.android.gms.awareness.snapshot.WeatherResult;
@@ -35,6 +39,7 @@ import com.google.android.gms.awareness.state.HeadphoneState;
 import com.google.android.gms.awareness.state.Weather;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.common.api.ResultCallbacks;
 import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.ActivityRecognitionResult;
 import com.google.android.gms.location.DetectedActivity;
@@ -47,6 +52,12 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import java.util.Arrays;
+import java.util.Date;
+
+import static android.provider.Settings.System.DATE_FORMAT;
+import static com.google.android.gms.wearable.DataMap.TAG;
+
 
 /**
  * Sample application which sets up a few context fences using the Awareness API, and takes
@@ -54,20 +65,31 @@ import com.google.android.gms.maps.model.MarkerOptions;
  */
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
 
-    private GoogleApiClient mApiClient;
+    // Declare variable for MyFenceReceiver class.
+    private MyFenceReceiver mMyFenceReceiver;
 
-    // The fence key is how callback code determines which fence fired.
     private final String FENCE_KEY = "fence_key";
     private final String TAG = getClass().getSimpleName();
-    private PendingIntent mPendingIntent;
-    private FenceReceiver mFenceReceiver;
     private LogFragment mLogFragment;
+
+    GoogleApiClient mGoogleApiClient;
 
     // The intent action which will be fired when your fence is triggered.
     private final String FENCE_RECEIVER_ACTION =
             BuildConfig.APPLICATION_ID + "FENCE_RECEIVER_ACTION";
 
     private static final int MY_PERMISSION_LOCATION = 1;
+
+    // Declare variable for PendingIntent
+    private PendingIntent mPendingIntent;
+
+    double currentLocationLat;  // current location latitude
+    double currentLocationLong;  // current location longitude
+    // Create the primitive fences.
+    AwarenessFence walkingFence = DetectedActivityFence.during(DetectedActivityFence.WALKING);
+    AwarenessFence vehicleFence = DetectedActivityFence.during(DetectedActivityFence.IN_VEHICLE);
+    AwarenessFence inHospitalFence = AwarenessFence.and(LocationFence.in(36,128,1L,3000));
+    AwarenessFence exitHospitalFence;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,11 +99,15 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         setSupportActionBar(toolbar);
 
 
-        GoogleApiClient.Builder mGoogleApiClientBuilder = new GoogleApiClient.Builder(this);
-        //Places 서비스에 사용될 API 사용요청
-        mGoogleApiClientBuilder.addApi(Places.GEO_DATA_API);
-        mGoogleApiClientBuilder.addApi(Places.PLACE_DETECTION_API);
 
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
+                .addApi(Awareness.API)
+                .build();
+        mGoogleApiClient.connect();
+
+        Intent intent = new Intent(FENCE_RECEIVER_ACTION);
+        mMyFenceReceiver = new MyFenceReceiver();
+        registerReceiver(mMyFenceReceiver, new IntentFilter(FENCE_RECEIVER_ACTION));
 
         Button checkBtn = (Button)findViewById(R.id.buttonCheck);
         checkBtn.setOnClickListener(new View.OnClickListener(){
@@ -112,8 +138,94 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         // Clear the console screen of previous snapshot / fence log data
         mLogFragment.getLogView().setText("");
 
-        mLogFragment.getLogView().println("Activity: " + activityStr
-                + ", Confidence: " + confidence + "/100");
+       // mLogFragment.getLogView().println("Activity: " + activityStr
+         //       + ", Confidence: " + confidence + "/100");
+    }
+
+
+    //펜스 등록
+    protected void registerFence(String fenceKey, AwarenessFence fence) {
+        Awareness.FenceApi.updateFences(
+                mGoogleApiClient,
+                new FenceUpdateRequest.Builder()
+                        .addFence(fenceKey, fence, mPendingIntent)
+                        .build())
+                .setResultCallback(new ResultCallback<Status>() {
+                    @Override
+                    public void onResult(@NonNull Status status) {
+                        if(status.isSuccess()) {
+                            Log.i(TAG, "Fence was successfully registered.");
+                            queryFence(fenceKey);
+                        } else {
+                            Log.e(TAG, "Fence could not be registered: " + status);
+                        }
+                    }
+                });
+    }
+    //펜스 해제
+    protected void unregisterFence(final String fenceKey) {
+        Awareness.FenceApi.updateFences(
+                mGoogleApiClient,
+                new FenceUpdateRequest.Builder()
+                        .removeFence(fenceKey)
+                        .build()).setResultCallback(new ResultCallbacks<Status>() {
+            @Override
+            public void onSuccess(@NonNull Status status) {
+                Log.i(TAG, "Fence " + fenceKey + " successfully removed.");
+            }
+
+            @Override
+            public void onFailure(@NonNull Status status) {
+                Log.i(TAG, "Fence " + fenceKey + " could NOT be removed.");
+            }
+        });
+    }
+
+    // Extend the BroadcastReceiver class.
+    public class MyFenceReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            FenceState fenceState = FenceState.extract(intent);
+
+            if (TextUtils.equals(fenceState.getFenceKey(), "headphoneFence")) {
+                switch(fenceState.getCurrentState()) {
+                    case FenceState.TRUE:
+                        Log.i(TAG, "Headphones are plugged in.");
+                        break;
+                    case FenceState.FALSE:
+                        Log.i(TAG, "Headphones are NOT plugged in.");
+                        break;
+                    case FenceState.UNKNOWN:
+                        Log.i(TAG, "The headphone fence is in an unknown state.");
+                        break;
+                }
+            }
+        }
+    }
+
+    protected void queryFence(final String fenceKey) {
+        Awareness.FenceApi.queryFences(mGoogleApiClient,
+                FenceQueryRequest.forFences(Arrays.asList(fenceKey)))
+                .setResultCallback(new ResultCallback<FenceQueryResult>() {
+                    @Override
+                    public void onResult(@NonNull FenceQueryResult fenceQueryResult) {
+                        if (!fenceQueryResult.getStatus().isSuccess()) {
+                            Log.e(TAG, "Could not query fence: " + fenceKey);
+                            return;
+                        }
+                        FenceStateMap map = fenceQueryResult.getFenceStateMap();
+                        for (String fenceKey : map.getFenceKeys()) {
+                            FenceState fenceState = map.getFenceState(fenceKey);
+                            Log.i(TAG, "Fence " + fenceKey + ": "
+                                    + fenceState.getCurrentState()
+                                    + ", was="
+                                    + fenceState.getPreviousState()
+                                    + ", lastUpdateTime="
+                                    + DATE_FORMAT.format(
+                                    String.valueOf(new Date(fenceState.getLastFenceUpdateTimeMillis()))));
+                        }
+                    }
+                });
     }
 
     @Override
@@ -160,8 +272,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
 }
-
-
 
 //import android.content.Context;
 //import android.support.annotation.NonNull;
