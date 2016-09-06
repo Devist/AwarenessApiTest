@@ -24,6 +24,8 @@ public class DBHelper extends SQLiteOpenHelper {
         //STATUS : STOP, VEHICLE
         db.execSQL("CREATE TABLE USER_STATUS (uStat TEXT);");
         db.execSQL("INSERT INTO USER_STATUS VALUES ('STOP');");
+
+        db.execSQL("CREATE TABLE LOCATION (Lat double, Lng double)");
     }
 
     @Override
@@ -56,6 +58,41 @@ public class DBHelper extends SQLiteOpenHelper {
             db.execSQL("INSERT OR REPLACE INTO USER_STATUS VALUES ('STOP')");
         }
 
+        db.close();
+    }
+
+    public double getLocationLat(){
+        // 읽기가 가능하게 DB 열기
+        SQLiteDatabase db = getReadableDatabase();
+        double result = 0;
+
+        // DB에 있는 데이터를 쉽게 처리하기 위해 Cursor를 사용하여 테이블에 있는 모든 데이터 출력
+        Cursor cursor = db.rawQuery("SELECT Lat FROM LOCATION", null);
+        while (cursor.moveToNext()) {
+            result = cursor.getDouble(0);
+        }
+        return result;
+    }
+
+    public double getLocationLng(){
+        // 읽기가 가능하게 DB 열기
+        SQLiteDatabase db = getReadableDatabase();
+        double result=0;
+
+        // DB에 있는 데이터를 쉽게 처리하기 위해 Cursor를 사용하여 테이블에 있는 모든 데이터 출력
+        Cursor cursor = db.rawQuery("SELECT Lng FROM LOCATION", null);
+        while (cursor.moveToNext()) {
+            result = cursor.getDouble(0);
+        }
+        return result;
+    }
+
+    public void updateLocation(double lat, double lng){
+        // 읽고 쓰기가 가능하게 DB 열기
+        SQLiteDatabase db = getWritableDatabase();
+        // DB에 입력한 값으로 행 추가
+        db.execSQL("DELETE FROM LOCATION;");
+        db.execSQL("INSERT OR REPLACE INTO LOCATION VALUES ("+lat+","+ lng +")");
         db.close();
     }
 

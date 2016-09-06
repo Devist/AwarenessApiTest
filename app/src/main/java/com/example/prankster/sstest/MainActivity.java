@@ -3,7 +3,9 @@ package com.example.prankster.sstest;
 import android.Manifest;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -13,6 +15,8 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
@@ -24,9 +28,16 @@ import com.example.prankster.sstest.Tracking.DetectActivitiesService;
 import com.example.prankster.sstest.Tracking.DetectHospitalService;
 import com.google.android.gms.awareness.Awareness;
 import com.google.android.gms.awareness.fence.AwarenessFence;
+import com.google.android.gms.awareness.fence.DetectedActivityFence;
+import com.google.android.gms.awareness.fence.FenceState;
+import com.google.android.gms.awareness.fence.FenceUpdateRequest;
+import com.google.android.gms.awareness.fence.HeadphoneFence;
+import com.google.android.gms.awareness.fence.LocationFence;
 import com.google.android.gms.awareness.snapshot.DetectedActivityResult;
+import com.google.android.gms.awareness.state.HeadphoneState;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.ActivityRecognitionResult;
 import com.google.android.gms.location.DetectedActivity;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -37,7 +48,7 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 
-
+/*오동환*/
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
 //    protected FenceReceiver mBroadcastReceiver;
 
@@ -51,9 +62,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     // The fence key is how callback code determines which fence fired.
     private final String FENCE_KEY = "fence_key";
     private PendingIntent mPendingIntent;
-//    private FenceReceiver mFenceReceiver;
+    private FenceReceiver mFenceReceiver;
     private LogFragment mLogFragment;
-    private Button startBtn, stopBtn, getHospitalFenceBtn, stopHospitalFenceBtn;
+    private Button startBtn, stopBtn, getHospitalFenceBtn, stopHospitalFenceBtn, checkLocationFenceBtn;
     private FloatingActionButton fab;
     private SupportMapFragment mapFragment;
 
@@ -74,22 +85,135 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void setLayout() {
-        startBtn                      = (Button)findViewById(R.id.buttonStart);
-        stopBtn                       = (Button)findViewById(R.id.buttonStop);
-        getHospitalFenceBtn          = (Button)findViewById(R.id.buttonStartFence);
-        stopHospitalFenceBtn         = (Button)findViewById(R.id.buttonStopFence);
+        startBtn = (Button) findViewById(R.id.buttonStart);
+        stopBtn = (Button) findViewById(R.id.buttonStop);
+        getHospitalFenceBtn = (Button) findViewById(R.id.buttonStartFence);
+        stopHospitalFenceBtn = (Button) findViewById(R.id.buttonStopFence);
+        checkLocationFenceBtn = (Button) findViewById(R.id.buttonCheck);
 
         fab = (FloatingActionButton) findViewById(R.id.fab);
         mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
         mLogFragment = (LogFragment) getSupportFragmentManager().findFragmentById(R.id.log_fragment);
         dbHelper = new DBHelper(getApplicationContext(), "MyInfo.db", null, 1);
-        Toast.makeText(this,dbHelper.getStatus(),Toast.LENGTH_LONG).show();
+        Toast.makeText(this, dbHelper.getStatus(), Toast.LENGTH_LONG).show();
+        mApiClient = new GoogleApiClient.Builder(getApplicationContext())
+                .addApi(Awareness.API)
+                .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
+                    @Override
+                    public void onConnected(@Nullable Bundle bundle) {
+                        Log.d("MYTEST", "ApiClient에 연결되었습니다.");
+                        Intent intent2 = new Intent(FENCE_RECEIVER_ACTION);
+                        mPendingIntent =
+                                PendingIntent.getBroadcast(MainActivity.this, 0, intent2, 0);
+                        // The broadcast receiver that will receive intents when a fence is triggered.
+                        mFenceReceiver = new FenceReceiver();
+                        registerReceiver(mFenceReceiver, new IntentFilter(FENCE_RECEIVER_ACTION));
+                        setupFences();
+                        if (ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                            return;
+                        }
+                        AwarenessFence walkingFence = LocationFence.in(37.523759, 126.926942, 100, 10000);
 
+                        // Now that we have an interesting, complex condition, register the fence to receive
+                        // callbacks.
+
+                        // Register the fence to receive callbacks.
+                        Awareness.FenceApi.updateFences(
+                                mApiClient,
+                                new FenceUpdateRequest.Builder()
+                                        .addFence(FENCE_KEY, walkingFence, mPendingIntent)
+                                        .build())
+                                .setResultCallback(new ResultCallback<Status>() {
+                                    @Override
+                                    public void onResult(@NonNull Status status) {
+                                        if(status.isSuccess()) {
+                                            Log.i("MYTEST", "Fence was successfully registered.");
+                                        } else {
+                                            Log.e("MYTEST", "Fence could not be registered: " + status);
+                                        }
+                                    }
+                                });
+                    }
+
+                    @Override
+                    public void onConnectionSuspended(int i) {
+                    }
+                })
+                .build();
+        mApiClient.connect();
         setListener();
     }
 
+    private void setupFences() {
+        // DetectedActivityFence will fire when it detects the user performing the specified
+        // activity.  In this case it's walking.
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        AwarenessFence walkingFence = LocationFence.in(37.523759, 126.926942, 100, 10000);
+
+        // Now that we have an interesting, complex condition, register the fence to receive
+        // callbacks.
+
+        // Register the fence to receive callbacks.
+        Awareness.FenceApi.updateFences(
+                mApiClient,
+                new FenceUpdateRequest.Builder()
+                        .addFence(FENCE_KEY, walkingFence, mPendingIntent)
+                        .build())
+                .setResultCallback(new ResultCallback<Status>() {
+                    @Override
+                    public void onResult(@NonNull Status status) {
+                        if(status.isSuccess()) {
+                            Log.i("MYTEST", "Fence was successfully registered.");
+                        } else {
+                            Log.e("MYTEST", "Fence could not be registered: " + status);
+                        }
+                    }
+                });
+    }
+    public class FenceReceiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (!TextUtils.equals(FENCE_RECEIVER_ACTION, intent.getAction())) {
+                mLogFragment.getLogView()
+                        .println("Received an unsupported action in FenceReceiver: action="
+                                + intent.getAction());
+                return;
+            }
+
+            // The state information for the given fence is em
+            FenceState fenceState = FenceState.extract(intent);
+
+            if (TextUtils.equals(fenceState.getFenceKey(), FENCE_KEY)) {
+                String fenceStateStr;
+                switch (fenceState.getCurrentState()) {
+                    case FenceState.TRUE:
+                        fenceStateStr = "true";
+                        break;
+                    case FenceState.FALSE:
+                        fenceStateStr = "false";
+                        break;
+                    case FenceState.UNKNOWN:
+                        fenceStateStr = "unknown";
+                        break;
+                    default:
+                        fenceStateStr = "unknown value";
+                }
+                mLogFragment.getLogView().println("Fence state: " + fenceStateStr);
+            }
+        }
+    }
     private void setListener(){
+
+        checkLocationFenceBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+            }
+        });
         startBtn.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View view){
@@ -168,7 +292,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public void onMapReady(GoogleMap map) {
         // Add a marker in Sydney, Australia, and move the camera.
-        LatLng sydney = new LatLng(37.523722, 126.926929);
+        LatLng sydney = new LatLng(37.523759, 126.926942);
         map.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
         map.moveCamera(CameraUpdateFactory.newLatLng(sydney));
 

@@ -121,8 +121,8 @@ public class DetectActivitiesService extends Service implements GoogleApiClient.
      * with a custom {@link BroadcastReceiver}
      */
     private void setupVehicleFences() {
-        //AwarenessFence vehicleFence = DetectedActivityFence.starting(DetectedActivityFence.IN_VEHICLE);
-        AwarenessFence vehicleFence = HeadphoneFence.during(HeadphoneState.PLUGGED_IN);
+        AwarenessFence vehicleFence = DetectedActivityFence.during(DetectedActivityFence.WALKING);
+        //AwarenessFence vehicleFence = HeadphoneFence.during(HeadphoneState.PLUGGED_IN);
         // Register the fence to receive callbacks.
         Awareness.FenceApi.updateFences(
                 uApiClient,
@@ -197,17 +197,22 @@ public class DetectActivitiesService extends Service implements GoogleApiClient.
 
     private void setDetectedHospitalService(int currentState) {
         String curStatus = dbHelper.getStatus();
-        Log.d("MYTEST","Activity 상태 변경 확인 - 현재상태: "+curStatus);
+        Log.i("MYTEST","Activity 상태 변경 확인 - 현재상태: "+curStatus);
         //운전중이거나 교통수단 이용중인 상태에서 -> 이용중이지 않은 상태로 바뀔 경우,
         //병원을 펜스에 등록하고 병원에 근접했는지 확인하기 위한 DetectHospitalService  를 시작한다.
         if(curStatus.equals("VEHICLE") && currentState==2){
             Intent hospitalIntent = new Intent(DetectActivitiesService.this, DetectHospitalService.class);
-            Log.d("MYTEST","DetectHospitalService를 시작합니다. ");
+            Log.i("MYTEST","DetectHospitalService를 시작합니다. ");
+
+//            if (mFenceReceiver != null) {
+//                unregisterReceiver(mFenceReceiver);
+//            }
+
             //Intent intent = new Intent(MainActivity.this,DetectActivitiesService.class);
             startService(hospitalIntent);
         }
         dbHelper.updateStatus(currentState);
-        Log.d("MYTEST","Activity 상태 변경 확인 - 이후상태: "+dbHelper.getStatus());
+        Log.i("MYTEST","Activity 상태 변경 확인 - 이후상태: "+dbHelper.getStatus());
     }
 
     private void notifyVehicleResult(String fenceStateStr) {
@@ -248,7 +253,7 @@ public class DetectActivitiesService extends Service implements GoogleApiClient.
                         FenceStateMap map = fenceQueryResult.getFenceStateMap();
                         for (String fenceKey : map.getFenceKeys()) {
                             FenceState fenceState = map.getFenceState(fenceKey);
-                            Log.i(TAG, "Fence " + fenceKey + ": "
+                            Log.i("MYTEST", "Fence " + fenceKey + ": "
                                     + fenceState.getCurrentState()
                                     + ", was="
                                     + fenceState.getPreviousState()
