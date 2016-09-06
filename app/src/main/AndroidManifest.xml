@@ -59,7 +59,7 @@
             </intent-filter>
         </activity>
         <service android:name=".Tracking.DetectActivitiesService" />
-        <service android:name=".Tracking.DetectedActivitiesIntentService" />
+        <service android:name=".Tracking.DetectHospitalService" />
     </application>
 
 </manifest>

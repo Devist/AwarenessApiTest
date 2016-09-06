@@ -5,12 +5,13 @@ package com.example.prankster.sstest.Tracking;
  */
 
 import android.os.Handler;
-import android.os.Message;
-public class ServiceThread extends Thread{
+
+public class DetectHospitalServiceThread extends Thread{
     Handler handler;
     boolean isRun = true;
+    GetHospitalLocationHttp getHospitalHttp;
 
-    public ServiceThread(Handler handler){
+    public DetectHospitalServiceThread(Handler handler){
         this.handler = handler;
     }
 
@@ -23,8 +24,11 @@ public class ServiceThread extends Thread{
     public void run(){
         //반복적으로 수행할 작업을 한다.
         while(isRun){
-            handler.sendEmptyMessage(0);//쓰레드에 있는 핸들러에게 메세지를 보냄
+
             try{
+                getHospitalHttp = new GetHospitalLocationHttp();
+                handler.sendEmptyMessage( getHospitalHttp.SendByHttp("37.507263", "126.940130",300,"의원") );//쓰레드에 있는 핸들러에게 메세지를 보냄
+
                 Thread.sleep(10000); //10초씩 쉰다.
             }catch (Exception e) {}
         }

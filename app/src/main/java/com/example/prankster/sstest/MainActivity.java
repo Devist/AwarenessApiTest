@@ -21,6 +21,7 @@ import logger.LogFragment;
 
 import com.example.prankster.sstest.DataBase.DBHelper;
 import com.example.prankster.sstest.Tracking.DetectActivitiesService;
+import com.example.prankster.sstest.Tracking.DetectHospitalService;
 import com.google.android.gms.awareness.Awareness;
 import com.google.android.gms.awareness.fence.AwarenessFence;
 import com.google.android.gms.awareness.snapshot.DetectedActivityResult;
@@ -48,11 +49,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private GoogleApiClient mApiClient;
     DBHelper dbHelper;
     // The fence key is how callback code determines which fence fired.
-    private final String FENCE_KEY = "fence_key", TAG = getClass().getSimpleName();
+    private final String FENCE_KEY = "fence_key";
     private PendingIntent mPendingIntent;
 //    private FenceReceiver mFenceReceiver;
     private LogFragment mLogFragment;
-    private Button startBtn, stopBtn;
+    private Button startBtn, stopBtn, getHospitalFenceBtn, stopHospitalFenceBtn;
     private FloatingActionButton fab;
     private SupportMapFragment mapFragment;
 
@@ -73,8 +74,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void setLayout() {
-        startBtn    = (Button)findViewById(R.id.buttonStart);
-        stopBtn     = (Button)findViewById(R.id.buttonStop);
+        startBtn                      = (Button)findViewById(R.id.buttonStart);
+        stopBtn                       = (Button)findViewById(R.id.buttonStop);
+        getHospitalFenceBtn          = (Button)findViewById(R.id.buttonStartFence);
+        stopHospitalFenceBtn         = (Button)findViewById(R.id.buttonStopFence);
+
         fab = (FloatingActionButton) findViewById(R.id.fab);
         mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
@@ -101,6 +105,25 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             public void onClick(View v) {
                 Toast.makeText(getApplicationContext(),"Service 끝",Toast.LENGTH_SHORT).show();
                 Intent intent = new Intent(MainActivity.this,DetectActivitiesService.class);
+                stopService(intent);
+            }
+        });
+
+        getHospitalFenceBtn.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View view){
+                Toast.makeText(getApplicationContext(),"Service 시작",Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(MainActivity.this, DetectHospitalService.class);
+                //Intent intent = new Intent(MainActivity.this,DetectActivitiesService.class);
+                startService(intent);
+            }
+        });
+
+        stopHospitalFenceBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Toast.makeText(getApplicationContext(),"Service 끝",Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(MainActivity.this,DetectHospitalService.class);
                 stopService(intent);
             }
         });

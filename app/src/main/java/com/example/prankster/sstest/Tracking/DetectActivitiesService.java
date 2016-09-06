@@ -62,7 +62,7 @@ public class DetectActivitiesService extends Service implements GoogleApiClient.
     private final String FENCE_RECEIVER_ACTION = BuildConfig.APPLICATION_ID + "FENCE_RECEIVER_ACTION";
 
     //서비스 동작중인지 확인하기 위한 쓰레드
-    ServiceThread thread;
+    DetectActivitiesServiceThread thread;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -71,9 +71,10 @@ public class DetectActivitiesService extends Service implements GoogleApiClient.
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-
-        setupClient();
-        setupService();
+        if(uApiClient==null){
+            setupClient();
+            setupService();
+        }
 
         return START_STICKY;
     }
@@ -82,7 +83,7 @@ public class DetectActivitiesService extends Service implements GoogleApiClient.
         dbHelper = new DBHelper(getApplicationContext(), "MyInfo.db", null, 1);
         Notifi_M = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         myServiceHandler handler = new myServiceHandler();
-        thread = new ServiceThread(handler);
+        thread = new DetectActivitiesServiceThread(handler);
         thread.start();
     }
 
@@ -120,8 +121,8 @@ public class DetectActivitiesService extends Service implements GoogleApiClient.
      * with a custom {@link BroadcastReceiver}
      */
     private void setupVehicleFences() {
-        AwarenessFence vehicleFence = DetectedActivityFence.starting(DetectedActivityFence.IN_VEHICLE);
-        //AwarenessFence vehicleFence = HeadphoneFence.during(HeadphoneState.PLUGGED_IN);
+        //AwarenessFence vehicleFence = DetectedActivityFence.starting(DetectedActivityFence.IN_VEHICLE);
+        AwarenessFence vehicleFence = HeadphoneFence.during(HeadphoneState.PLUGGED_IN);
         // Register the fence to receive callbacks.
         Awareness.FenceApi.updateFences(
                 uApiClient,
@@ -196,16 +197,17 @@ public class DetectActivitiesService extends Service implements GoogleApiClient.
 
     private void setDetectedHospitalService(int currentState) {
         String curStatus = dbHelper.getStatus();
-
+        Log.d("MYTEST","Activity 상태 변경 확인 - 현재상태: "+curStatus);
         //운전중이거나 교통수단 이용중인 상태에서 -> 이용중이지 않은 상태로 바뀔 경우,
         //병원을 펜스에 등록하고 병원에 근접했는지 확인하기 위한 DetectHospitalService  를 시작한다.
         if(curStatus.equals("VEHICLE") && currentState==2){
-            Intent hospitalIntent = new Intent(DetectActivitiesService.this, DetectActivitiesService.class);
+            Intent hospitalIntent = new Intent(DetectActivitiesService.this, DetectHospitalService.class);
+            Log.d("MYTEST","DetectHospitalService를 시작합니다. ");
             //Intent intent = new Intent(MainActivity.this,DetectActivitiesService.class);
             startService(hospitalIntent);
         }
         dbHelper.updateStatus(currentState);
-
+        Log.d("MYTEST","Activity 상태 변경 확인 - 이후상태: "+dbHelper.getStatus());
     }
 
     private void notifyVehicleResult(String fenceStateStr) {

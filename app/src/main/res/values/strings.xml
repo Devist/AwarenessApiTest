@@ -16,4 +16,5 @@
     </string>
 
     <string name="geofence_transition_notification_text">Click notification to return to app</string>
+    <string name="place_api_key">AIzaSyCHtm8IJLEqC_o9dxWI3dZkwtn6DsNaWcI</string>
 </resources>
