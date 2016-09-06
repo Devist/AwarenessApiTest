@@ -44,12 +44,18 @@ public class DBHelper extends SQLiteOpenHelper {
         return result;
     }
 
-    private void updateStatus(String status){
+    public void updateStatus(int status){
         // 읽고 쓰기가 가능하게 DB 열기
         SQLiteDatabase db = getWritableDatabase();
         // DB에 입력한 값으로 행 추가
         db.execSQL("DELETE FROM USER_STATUS;");
-        db.execSQL("INSERT OR REPLACE INTO USER_STATUS VALUES ('"+status+"');");
+        if(status==1){
+            db.execSQL("INSERT OR REPLACE INTO USER_STATUS VALUES ('VEHICLE')");
+        }
+        else{
+            db.execSQL("INSERT OR REPLACE INTO USER_STATUS VALUES ('STOP')");
+        }
+
         db.close();
     }
 

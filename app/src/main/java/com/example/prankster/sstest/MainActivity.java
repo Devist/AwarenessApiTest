@@ -83,7 +83,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         Toast.makeText(this,dbHelper.getStatus(),Toast.LENGTH_LONG).show();
 
         setListener();
-//        setClient();
     }
 
     private void setListener(){
@@ -113,31 +112,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         });
     }
-
-//    private void setClient(){
-//        Context context = getApplicationContext();
-//        mApiClient = new GoogleApiClient.Builder(context)
-//                .addApi(Awareness.API)
-//                .enableAutoManage(this, 1, null)
-//                .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
-//                    @Override
-//                    public void onConnected(@Nullable Bundle bundle) {
-//                        // Set up the PendingIntent that will be fired when the fence is triggered.
-//                        Intent intent = new Intent(FENCE_RECEIVER_ACTION);
-//                        mPendingIntent =
-//                                PendingIntent.getBroadcast(MainActivity.this, 0, intent, 0);
-//
-//                        // The broadcast receiver that will receive intents when a fence is triggered.
-//                        mFenceReceiver = new FenceReceiver();
-//                        registerReceiver(mFenceReceiver, new IntentFilter(FENCE_RECEIVER_ACTION));
-//                        setupVehicleFences();
-//                    }
-//                    @Override
-//                    public void onConnectionSuspended(int i) {
-//                    }
-//                })
-//                .build();
-//    }
 
     @Override
     protected void onStop() {
@@ -201,10 +175,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     public void onResult(@NonNull DetectedActivityResult dar) {
                         ActivityRecognitionResult arr = dar.getActivityRecognitionResult();
 
-                        // getMostProbableActivity() is good enough for basic Activity detection.
-                        // To work within a threshold of confidence,
-                        // use ActivityRecognitionResult.getProbableActivities() to get a list of
-                        // potential current activities, and check the confidence of each one.
                         DetectedActivity probableActivity = arr.getMostProbableActivity();
 
                         // Confidence is an int between 0 and 100.
@@ -214,97 +184,5 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                                 + ", Confidence: " + confidence + "/100");
                     }
                 });
-
     }
-
-
-    /**
-     * Sets up {@link AwarenessFence}'s for the sample app, and registers callbacks for them
-     * with a custom {@link BroadcastReceiver}
-     */
-//    private void setupVehicleFences() {
-//        // DetectedActivityFence will fire when it detects the user performing the specified
-//        // activity.  In this case it's walking.
-//        //AwarenessFence vehicleFence = DetectedActivityFence.starting(DetectedActivityFence.IN_VEHICLE);
-//        AwarenessFence vehicleFence = HeadphoneFence.during(HeadphoneState.PLUGGED_IN);
-//        // Register the fence to receive callbacks.
-//        Awareness.FenceApi.updateFences(
-//                mApiClient,
-//                new FenceUpdateRequest.Builder()
-//                        .addFence(FENCE_KEY, vehicleFence, mPendingIntent)
-//                        .build())
-//                .setResultCallback(new ResultCallback<Status>() {
-//                    @Override
-//                    public void onResult(@NonNull Status status) {
-//                        if(status.isSuccess()) {
-//                            Log.i(TAG, "Vehicle Fence was successfully registered.");
-//                        } else {
-//                            Log.e(TAG, "Error. VehicleFence could not be registered: " + status);
-//                        }
-//                    }
-//                });
-//    }
-//    protected void queryFence(final String fenceKey) {
-//        Awareness.FenceApi.queryFences(mApiClient,
-//                FenceQueryRequest.forFences(Arrays.asList(fenceKey)))
-//                .setResultCallback(new ResultCallback<FenceQueryResult>() {
-//                    @Override
-//                    public void onResult(@NonNull FenceQueryResult fenceQueryResult) {
-//                        if (!fenceQueryResult.getStatus().isSuccess()) {
-//                            Log.e(TAG, "Could not query fence: " + fenceKey);
-//                            return;
-//                        }
-//                        FenceStateMap map = fenceQueryResult.getFenceStateMap();
-//                        for (String fenceKey : map.getFenceKeys()) {
-//                            FenceState fenceState = map.getFenceState(fenceKey);
-//                            Log.i(TAG, "Fence " + fenceKey + ": "
-//                                    + fenceState.getCurrentState()
-//                                    + ", was="
-//                                    + fenceState.getPreviousState()
-//                                    + ", lastUpdateTime="
-//                                    + DATE_FORMAT.format(
-//                                    String.valueOf(new Date(fenceState.getLastFenceUpdateTimeMillis()))));
-//                        }
-//                    }
-//                });
-//    }
-    /**
-     * A basic BroadcastReceiver to handle intents from from the Awareness API.
-     */
-//    public class FenceReceiver extends BroadcastReceiver {
-//
-//        @Override
-//        public void onReceive(Context context, Intent intent) {
-//            if (!TextUtils.equals(FENCE_RECEIVER_ACTION, intent.getAction())) {
-//                mLogFragment.getLogView()
-//                        .println("Received an unsupported action in FenceReceiver: action="
-//                                + intent.getAction());
-//                return;
-//            }
-//            queryFence(FENCE_KEY);
-//            Log.d("되나","된다");
-//            // The state information for the given fence is em
-//            FenceState fenceState = FenceState.extract(intent);
-//            Log.d("확인",fenceState.getFenceKey()+";;;"+ FENCE_KEY);
-//            if (TextUtils.equals(fenceState.getFenceKey(), FENCE_KEY)) {
-//                String fenceStateStr;
-//                switch (fenceState.getCurrentState()) {
-//
-//                    case FenceState.TRUE:
-//                        fenceStateStr = "운전중, 또는 대중교통을 이용중입니다. 병원을 찾아가는 중이라고 가정하겠습니다.";
-//                        break;
-//                    case FenceState.FALSE:
-//                        fenceStateStr = "이동을 종료하였습니다. 반경 200m 내의 병원을 펜스로 등록합니다.";
-//                        break;
-//                    case FenceState.UNKNOWN:
-//                        fenceStateStr = "unknown";
-//                        break;
-//                    default:
-//                        fenceStateStr = "unknown value";
-//                }
-//                mLogFragment.getLogView().println("Fence state: " + fenceStateStr);
-//            }
-//        }
-//    }
-
 }

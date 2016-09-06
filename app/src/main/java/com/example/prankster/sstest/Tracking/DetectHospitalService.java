@@ -17,6 +17,12 @@ import android.widget.Toast;
 import com.example.prankster.sstest.MainActivity;
 import com.example.prankster.sstest.R;
 
+
+
+
+//https://maps.googleapis.com/maps/api/place/autocomplete/xml?input=Amoeba&types=establishment&location=37.76999,-122.44696&radius=500&key=API_KEY
+//radius 500 이내의 Amoeba 가 포함된 시설 요청
+
 public class DetectHospitalService extends Service {
     NotificationManager Notifi_M;
     ServiceThread thread;
