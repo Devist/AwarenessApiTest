@@ -1,7 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.prankster.sstest">
+    <!--상태 검출 관련-->
+    <uses-permission android:name="com.google.android.gms.permission.ACTIVITY_RECOGNITION" />
 
+    <!-- To auto-complete the email text field in the login form with the user's emails -->
+    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
+    <uses-permission android:name="android.permission.READ_PROFILE" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+
+    <!-- 구글맵 API v2의 권한 설정 -->
+    <uses-permission android:name="org.androidtown.lbs.map.permission.MAPS_RECEIVE" />
+
+    <!-- 구글맵 API v2의 일반 권한 설정. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES" />
+
+    <!-- 일반 권한 설정 -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"></uses-permission>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.INTERNET"></uses-permission>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"></uses-permission>
+    <uses-permission android:name="android.permission.READ_PHONE_STATE"></uses-permission>
+    <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION" />
     <!-- Activity recognition requires its own permission -->
     <uses-permission android:name="com.google.android.gms.permission.ACTIVITY_RECOGNITION" />
 
@@ -9,7 +36,8 @@
     <!-- 상세 위치 권한-->
     <!-- 대략적 위치 권한만 필요시 : <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>  -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
-
+    <!--상태 검출 관련-->
+    <uses-permission android:name="com.google.android.gms.permission.ACTIVITY_RECOGNITION" />
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -30,6 +58,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <service android:name=".Tracking.DetectActivitiesService" />
+        <service android:name=".Tracking.DetectedActivitiesIntentService" />
     </application>
 
 </manifest>
