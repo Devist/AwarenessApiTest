@@ -19,6 +19,7 @@
             android:layout_height="wrap_content">
             <Button
                 android:text="Start"
+                android:layout_weight="1"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 tools:layout_editor_absoluteY="-39dp"
@@ -26,6 +27,7 @@
                 android:id="@+id/buttonStart" />
             <Button
                 android:text="Stop"
+                android:layout_weight="1"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 tools:layout_editor_absoluteY="-39dp"
@@ -34,29 +36,26 @@
 
             <Button
                 android:text="Now Hos"
+                android:layout_weight="1"
                 android:layout_gravity="right"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 tools:layout_editor_absoluteY="-39dp"
                 tools:layout_editor_absoluteX="62dp"
-                android:id="@+id/buttonStartFence" />
+                android:id="@+id/buttonStartFence"
+                android:visibility="gone"/>
 
             <Button
+                android:layout_weight="1"
                 android:text="Stop HOS"
                 android:layout_gravity="right"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 tools:layout_editor_absoluteY="-39dp"
                 tools:layout_editor_absoluteX="62dp"
-                android:id="@+id/buttonStopFence" />
-            <Button
-                android:text="C"
-                android:layout_gravity="right"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                tools:layout_editor_absoluteY="-39dp"
-                tools:layout_editor_absoluteX="62dp"
-                android:id="@+id/buttonCheck" />
+                android:id="@+id/buttonStopFence"
+                android:visibility="gone"/>
+
         </LinearLayout>
 
         <fragment

@@ -1,0 +1,746 @@
+Index: .idea/misc.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- .idea/misc.xml	(date 1473137522000)
++++ .idea/misc.xml	(date 1473152178000)
+@@ -37,7 +37,7 @@
+     <ConfirmationsSetting value="0" id="Add" />
+     <ConfirmationsSetting value="0" id="Remove" />
+   </component>
+-  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_8" default="true" assert-keyword="true" jdk-15="true" project-jdk-name="1.8" project-jdk-type="JavaSDK">
++  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_7" default="true" assert-keyword="true" jdk-15="true" project-jdk-name="1.8" project-jdk-type="JavaSDK">
+     <output url="file://$PROJECT_DIR$/build/classes" />
+   </component>
+   <component name="ProjectType">
+\ No newline at end of file
+Index: app/src/main/java/com/example/prankster/sstest/Error/GeofenceTransitionsIntentService.java
+===================================================================
+--- app/src/main/java/com/example/prankster/sstest/Error/GeofenceTransitionsIntentService.java	(date 1473137522000)
++++ app/src/main/java/com/example/prankster/sstest/Error/GeofenceTransitionsIntentService.java	(date 1473137522000)
+@@ -1,192 +0,0 @@
+-/**
+- * Copyright 2014 Google Inc. All Rights Reserved.
+- *
+- * Licensed under the Apache License, Version 2.0 (the "License");
+- * you may not use this file except in compliance with the License.
+- * You may obtain a copy of the License at
+- *
+- * http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS,
+- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+- * See the License for the specific language governing permissions and
+- * limitations under the License.
+- */
+-
+-package com.example.prankster.sstest.Error;
+-
+-import android.app.IntentService;
+-import android.app.NotificationManager;
+-import android.app.PendingIntent;
+-import android.content.Context;
+-import android.content.Intent;
+-import android.graphics.BitmapFactory;
+-import android.graphics.Color;
+-import android.support.v4.app.NotificationCompat;
+-import android.support.v4.app.TaskStackBuilder;
+-import android.text.TextUtils;
+-import android.util.Log;
+-
+-import com.example.prankster.sstest.MainActivity;
+-import com.example.prankster.sstest.R;
+-import com.google.android.gms.location.Geofence;
+-import com.google.android.gms.location.GeofencingEvent;
+-
+-import java.util.ArrayList;
+-import java.util.List;
+-
+-/**
+- * Listener for geofence transition changes.
+- *
+- * Receives geofence transition events from Location Services in the form of an Intent containing
+- * the transition type and geofence id(s) that triggered the transition. Creates a notification
+- * as the output.
+- */
+-public class GeofenceTransitionsIntentService extends IntentService {
+-
+-    protected static final String TAG = "GeofenceTransitionsIS";
+-
+-    /**
+-     * This constructor is required, and calls the super IntentService(String)
+-     * constructor with the name for a worker thread.
+-     */
+-    public GeofenceTransitionsIntentService() {
+-        // Use the TAG to name the worker thread.
+-        super(TAG);
+-    }
+-
+-    @Override
+-    public void onCreate() {
+-        super.onCreate();
+-    }
+-    /**
+-     * Handles incoming intents.
+-     * @param intent sent by Location Services. This Intent is provided to Location
+-     *               Services (inside a PendingIntent) when addGeofences() is called.
+-     */
+-    @Override
+-    protected void onHandleIntent(Intent intent) {
+-        GeofencingEvent geofencingEvent = GeofencingEvent.fromIntent(intent);
+-        if (geofencingEvent.hasError()) {
+-            String errorMessage = GeofenceErrorMessages.getErrorString(this,
+-                    geofencingEvent.getErrorCode());
+-            Log.e(TAG, errorMessage);
+-            return;
+-        }
+-
+-        // Get the transition type.
+-        int geofenceTransition = geofencingEvent.getGeofenceTransition();
+-
+-        // Test that the reported transition was of interest.
+-        if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER ||
+-                geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT) {
+-
+-            // Get the geofences that were triggered. A single event can trigger multiple geofences.
+-            List<Geofence> triggeringGeofences = geofencingEvent.getTriggeringGeofences();
+-
+-            // Get the transition details as a String.
+-            String geofenceTransitionDetails = getGeofenceTransitionDetails(
+-                    this,
+-                    geofenceTransition,
+-                    triggeringGeofences
+-            );
+-
+-            // Send notification and log the transition details.
+-            sendNotification(geofenceTransitionDetails);
+-            Log.i(TAG, geofenceTransitionDetails);
+-        } else {
+-            // Log the error.
+-            Log.e(TAG, getString(R.string.geofence_transition_invalid_type, geofenceTransition));
+-        }
+-    }
+-
+-    /**
+-     * Gets transition details and returns them as a formatted string.
+-     *
+-     * @param context               The app context.
+-     * @param geofenceTransition    The ID of the geofence transition.
+-     * @param triggeringGeofences   The geofence(s) triggered.
+-     * @return                      The transition details formatted as String.
+-     */
+-    private String getGeofenceTransitionDetails(
+-            Context context,
+-            int geofenceTransition,
+-            List<Geofence> triggeringGeofences) {
+-
+-        String geofenceTransitionString = getTransitionString(geofenceTransition);
+-
+-        // Get the Ids of each geofence that was triggered.
+-        ArrayList triggeringGeofencesIdsList = new ArrayList();
+-        for (Geofence geofence : triggeringGeofences) {
+-            triggeringGeofencesIdsList.add(geofence.getRequestId());
+-        }
+-        String triggeringGeofencesIdsString = TextUtils.join(", ",  triggeringGeofencesIdsList);
+-
+-        return geofenceTransitionString + ": " + triggeringGeofencesIdsString;
+-    }
+-
+-    /**
+-     * Posts a notification in the notification bar when a transition is detected.
+-     * If the user clicks the notification, control goes to the MainActivity.
+-     */
+-    private void sendNotification(String notificationDetails) {
+-        // Create an explicit content Intent that starts the main Activity.
+-        Intent notificationIntent = new Intent(getApplicationContext(), MainActivity.class);
+-
+-        // Construct a task stack.
+-        TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
+-
+-        // Add the main Activity to the task stack as the parent.
+-        stackBuilder.addParentStack(MainActivity.class);
+-
+-        // Push the content Intent onto the stack.
+-        stackBuilder.addNextIntent(notificationIntent);
+-
+-        // Get a PendingIntent containing the entire back stack.
+-        PendingIntent notificationPendingIntent =
+-                stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
+-
+-        // Get a notification builder that's compatible with platform versions >= 4
+-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
+-
+-        // Define the notification settings.
+-        builder.setSmallIcon(R.mipmap.ic_launcher)
+-                // In a real app, you may want to use a library like Volley
+-                // to decode the Bitmap.
+-                .setLargeIcon(BitmapFactory.decodeResource(getResources(),
+-                        R.mipmap.ic_launcher))
+-                .setColor(Color.RED)
+-                .setContentTitle(notificationDetails)
+-                .setContentText(getString(R.string.geofence_transition_notification_text))
+-                .setContentIntent(notificationPendingIntent);
+-
+-        // Dismiss notification once the user touches it.
+-        builder.setAutoCancel(true);
+-
+-        // Get an instance of the Notification manager
+-        NotificationManager mNotificationManager =
+-                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+-
+-        // Issue the notification
+-        mNotificationManager.notify(0, builder.build());
+-    }
+-
+-    /**
+-     * Maps geofence transition types to their human-readable equivalents.
+-     *
+-     * @param transitionType    A transition type constant defined in Geofence
+-     * @return                  A String indicating the type of transition
+-     */
+-    private String getTransitionString(int transitionType) {
+-        switch (transitionType) {
+-            case Geofence.GEOFENCE_TRANSITION_ENTER:
+-                //return getString(R.string.geofence_transition_entered);
+-            case Geofence.GEOFENCE_TRANSITION_EXIT:
+-                //return getString(R.string.geofence_transition_exited);
+-            default:
+-                return "a";
+-                //return getString(R.string.unknown_geofence_transition);
+-        }
+-    }
+-}
+Index: app/src/main/java/com/example/prankster/sstest/Tracking/DetectActivitiesService.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/java/com/example/prankster/sstest/Tracking/DetectActivitiesService.java	(date 1473137522000)
++++ app/src/main/java/com/example/prankster/sstest/Tracking/DetectActivitiesService.java	(date 1473152178000)
+@@ -62,7 +62,7 @@
+     private final String FENCE_RECEIVER_ACTION = BuildConfig.APPLICATION_ID + "FENCE_RECEIVER_ACTION";
+ 
+     //서비스 동작중인지 확인하기 위한 쓰레드
+-    ServiceThread thread;
++    DetectActivitiesServiceThread thread;
+ 
+     @Override
+     public IBinder onBind(Intent intent) {
+@@ -71,9 +71,10 @@
+ 
+     @Override
+     public int onStartCommand(Intent intent, int flags, int startId) {
+-
++        if(uApiClient==null){
+-        setupClient();
+-        setupService();
++            setupClient();
++            setupService();
++        }
+ 
+         return START_STICKY;
+     }
+@@ -82,7 +83,7 @@
+         dbHelper = new DBHelper(getApplicationContext(), "MyInfo.db", null, 1);
+         Notifi_M = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+         myServiceHandler handler = new myServiceHandler();
+-        thread = new ServiceThread(handler);
++        thread = new DetectActivitiesServiceThread(handler);
+         thread.start();
+     }
+ 
+@@ -120,8 +121,8 @@
+      * with a custom {@link BroadcastReceiver}
+      */
+     private void setupVehicleFences() {
+-        AwarenessFence vehicleFence = DetectedActivityFence.starting(DetectedActivityFence.IN_VEHICLE);
+-        //AwarenessFence vehicleFence = HeadphoneFence.during(HeadphoneState.PLUGGED_IN);
++        //AwarenessFence vehicleFence = DetectedActivityFence.starting(DetectedActivityFence.IN_VEHICLE);
++        AwarenessFence vehicleFence = HeadphoneFence.during(HeadphoneState.PLUGGED_IN);
+         // Register the fence to receive callbacks.
+         Awareness.FenceApi.updateFences(
+                 uApiClient,
+@@ -196,16 +197,17 @@
+ 
+     private void setDetectedHospitalService(int currentState) {
+         String curStatus = dbHelper.getStatus();
+-
++        Log.d("MYTEST","Activity 상태 변경 확인 - 현재상태: "+curStatus);
+         //운전중이거나 교통수단 이용중인 상태에서 -> 이용중이지 않은 상태로 바뀔 경우,
+         //병원을 펜스에 등록하고 병원에 근접했는지 확인하기 위한 DetectHospitalService  를 시작한다.
+         if(curStatus.equals("VEHICLE") && currentState==2){
+-            Intent hospitalIntent = new Intent(DetectActivitiesService.this, DetectActivitiesService.class);
++            Intent hospitalIntent = new Intent(DetectActivitiesService.this, DetectHospitalService.class);
++            Log.d("MYTEST","DetectHospitalService를 시작합니다. ");
+             //Intent intent = new Intent(MainActivity.this,DetectActivitiesService.class);
+             startService(hospitalIntent);
+         }
+         dbHelper.updateStatus(currentState);
+-
++        Log.d("MYTEST","Activity 상태 변경 확인 - 이후상태: "+dbHelper.getStatus());
+     }
+ 
+     private void notifyVehicleResult(String fenceStateStr) {
+Index: app/src/main/java/com/example/prankster/sstest/Tracking/ServiceThread.java
+===================================================================
+--- app/src/main/java/com/example/prankster/sstest/Tracking/ServiceThread.java	(date 1473137522000)
++++ app/src/main/java/com/example/prankster/sstest/Tracking/DetectActivitiesServiceThread.java	(date 1473152178000)
+@@ -6,11 +6,11 @@
+ 
+ import android.os.Handler;
+ import android.os.Message;
+-public class ServiceThread extends Thread{
++public class DetectActivitiesServiceThread extends Thread{
+     Handler handler;
+     boolean isRun = true;
+ 
+-    public ServiceThread(Handler handler){
++    public DetectActivitiesServiceThread(Handler handler){
+         this.handler = handler;
+     }
+ 
+\ No newline at end of file
+Index: app/src/main/java/com/example/prankster/sstest/Tracking/DetectHospitalService.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/java/com/example/prankster/sstest/Tracking/DetectHospitalService.java	(date 1473137522000)
++++ app/src/main/java/com/example/prankster/sstest/Tracking/DetectHospitalService.java	(date 1473152178000)
+@@ -4,29 +4,49 @@
+  * Created by prankster on 2016-09-05.
+  */
+ 
++import android.Manifest;
+ import android.app.Notification;
+ import android.app.NotificationManager;
+ import android.app.PendingIntent;
+ import android.app.Service;
+ import android.content.Context;
+ import android.content.Intent;
++import android.content.pm.PackageManager;
++import android.location.Location;
++import android.os.Bundle;
+ import android.os.Handler;
+ import android.os.IBinder;
++import android.support.annotation.NonNull;
++import android.support.annotation.Nullable;
++import android.support.v4.app.ActivityCompat;
++import android.util.Log;
+ import android.widget.Toast;
+ 
++import com.example.prankster.sstest.BuildConfig;
+ import com.example.prankster.sstest.MainActivity;
+ import com.example.prankster.sstest.R;
++import com.google.android.gms.awareness.Awareness;
++import com.google.android.gms.awareness.snapshot.LocationResult;
++import com.google.android.gms.common.api.GoogleApiClient;
++import com.google.android.gms.common.api.ResultCallback;
+ 
+ 
+-
+-
+ //https://maps.googleapis.com/maps/api/place/autocomplete/xml?input=Amoeba&types=establishment&location=37.76999,-122.44696&radius=500&key=API_KEY
+ //radius 500 이내의 Amoeba 가 포함된 시설 요청
++//https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=-33.8670522,151.1957362&radius=500&types=food&name=cruise&key=AddYourOwnKeyHere
+ 
+ public class DetectHospitalService extends Service {
+     NotificationManager Notifi_M;
+-    ServiceThread thread;
++    DetectHospitalServiceThread thread;
+-    Notification Notifi ;
++    Notification Notifi;
++    private GoogleApiClient uApiClient;
++    private PendingIntent mPendingIntent;
++    //GetHospitalLocationHttp getHospitalHttp;
++    private DetectActivitiesService.FenceReceiver mFenceReceiver;
++    // The fence key is how callback code determines which fence fired.
++    private final String FENCE_KEY = "fence_key", TAG = getClass().getSimpleName();
++    // The intent action which will be fired when your fence is triggered.
++    private final String FENCE_RECEIVER_ACTION = BuildConfig.APPLICATION_ID + "FENCE_RECEIVER_ACTION";
+ 
+     @Override
+     public IBinder onBind(Intent intent) {
+@@ -37,11 +57,48 @@
+     public int onStartCommand(Intent intent, int flags, int startId) {
+         Notifi_M = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+         myServiceHandler handler = new myServiceHandler();
+-        thread = new ServiceThread(handler);
++        //getHospitalHttp = new GetHospitalLocationHttp();
++        //getHospitalHttp.SendByHttp("37.523759","126.926909",1000,"의원");
++        thread = new DetectHospitalServiceThread(handler);
+         thread.start();
++        setupClient();
++        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
++            // TODO: Consider calling
++            //    ActivityCompat#requestPermissions
++            // here to request the missing permissions, and then overriding
++            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
++            //                                          int[] grantResults)
++            // to handle the case where the user grants the permission. See the documentation
++            // for ActivityCompat#requestPermissions for more details.
++            //return TODO;
++        }
++        printSnapshot();
+         return START_STICKY;
+     }
+ 
++    private void setupClient() {
++        uApiClient = new GoogleApiClient.Builder(getApplicationContext())
++                .addApi(Awareness.API)
++                .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
++                    @Override
++                    public void onConnected(@Nullable Bundle bundle) {
++                        Log.d("MYTEST", "ApiClient에 연결되었습니다.");
++                        //Intent intent2 = new Intent(FENCE_RECEIVER_ACTION);
++                        //mPendingIntent =
++                        //        PendingIntent.getBroadcast(DetectHospitalService.this, 0, intent2, 0);
++                        // The broadcast receiver that will receive intents when a fence is triggered.
++                        //mFenceReceiver = new DetectActivitiesService.FenceReceiver();
++                        //registerReceiver(mFenceReceiver, new IntentFilter(FENCE_RECEIVER_ACTION));
++                        //setupVehicleFences();
++                    }
++
++                    @Override
++                    public void onConnectionSuspended(int i) {
++                    }
++                })
++                .build();
++        uApiClient.connect();
++    }
+     //서비스가 종료될 때 할 작업
+ 
+     public void onDestroy() {
+@@ -53,7 +110,7 @@
+         @Override
+         public void handleMessage(android.os.Message msg) {
+             Intent intent = new Intent(DetectHospitalService.this, MainActivity.class);
+-            PendingIntent pendingIntent = PendingIntent.getActivity(DetectHospitalService.this, 0, intent,PendingIntent.FLAG_UPDATE_CURRENT);
++            PendingIntent pendingIntent = PendingIntent.getActivity(DetectHospitalService.this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+ 
+             Notifi = new Notification.Builder(getApplicationContext())
+                     .setContentTitle("Content Title")
+@@ -73,10 +130,33 @@
+             Notifi.flags = Notification.FLAG_AUTO_CANCEL;
+ 
+ 
+-            Notifi_M.notify( 777 , Notifi);
++            Notifi_M.notify(777, Notifi);
+ 
+             //토스트 띄우기
+             Toast.makeText(DetectHospitalService.this, "뜸?", Toast.LENGTH_LONG).show();
+         }
+-    };
++    }
++
++    ;
++
++
++    private void printSnapshot() {
++        // Clear the console screen of previous snapshot / fence log data
++
++        // Each type of contextual information in the snapshot API has a corresponding "get" method.
++        //  For instance, this is how to get the user's current Activity.
++        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
++            Log.d("MYTEST", "내 위치 권한 설정 안됐음");
++            return;
++        }
++        Awareness.SnapshotApi.getLocation(uApiClient)
++                .setResultCallback(new ResultCallback<LocationResult>() {
++                    @Override
++                    public void onResult(@NonNull LocationResult locationResult) {
++                        Location myLocation = locationResult.getLocation();
++                        Log.d("MYTEST","현재 내 위치 : " + myLocation.getLatitude() + " , "+ myLocation.getLongitude());
++                    }
++
++                });
++    }
+ }
+Index: app/src/main/java/com/example/prankster/sstest/Tracking/DetectHospitalServiceThread.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/java/com/example/prankster/sstest/Tracking/DetectHospitalServiceThread.java	(date 1473152178000)
++++ app/src/main/java/com/example/prankster/sstest/Tracking/DetectHospitalServiceThread.java	(date 1473152178000)
+@@ -0,0 +1,36 @@
++package com.example.prankster.sstest.Tracking;
++
++/**
++ * Created by prankster on 2016-09-05.
++ */
++
++import android.os.Handler;
++
++public class DetectHospitalServiceThread extends Thread{
++    Handler handler;
++    boolean isRun = true;
++    GetHospitalLocationHttp getHospitalHttp;
++
++    public DetectHospitalServiceThread(Handler handler){
++        this.handler = handler;
++    }
++
++    public void stopForever(){
++        synchronized (this) {
++            this.isRun = false;
++        }
++    }
++
++    public void run(){
++        //반복적으로 수행할 작업을 한다.
++        while(isRun){
++
++            try{
++                getHospitalHttp = new GetHospitalLocationHttp();
++                handler.sendEmptyMessage( getHospitalHttp.SendByHttp("37.507263", "126.940130",300,"의원") );//쓰레드에 있는 핸들러에게 메세지를 보냄
++
++                Thread.sleep(10000); //10초씩 쉰다.
++            }catch (Exception e) {}
++        }
++    }
++}
+\ No newline at end of file
+Index: app/src/main/java/com/example/prankster/sstest/Tracking/GetHospitalLocationHttp.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/java/com/example/prankster/sstest/Tracking/GetHospitalLocationHttp.java	(date 1473152178000)
++++ app/src/main/java/com/example/prankster/sstest/Tracking/GetHospitalLocationHttp.java	(date 1473152178000)
+@@ -0,0 +1,70 @@
++package com.example.prankster.sstest.Tracking;
++
++import android.util.Log;
++
++import com.example.prankster.sstest.R;
++
++import org.apache.http.HttpEntity;
++import org.apache.http.HttpResponse;
++import org.apache.http.client.methods.HttpGet;
++import org.apache.http.impl.client.DefaultHttpClient;
++import org.apache.http.util.EntityUtils;
++import org.json.JSONArray;
++import org.json.JSONObject;
++
++import java.io.BufferedReader;
++import java.io.InputStreamReader;
++
++/**
++ * Created by prankster on 2016. 4. 25..
++ */
++public class GetHospitalLocationHttp {
++
++    // Thread로 웹서버에 접속
++    /**
++     * 서버에 검색 데이터를 요청하는 메소드
++     * @param lat,lng,myRadius,name
++     * @return
++     */
++    public int SendByHttp(String lat, String lng, int myRadius, String name) {
++        String URL = "https://maps.googleapis.com/maps/api/place/nearbysearch/json";
++        HttpGet get = new HttpGet(URL+"?location="+lat + ","+ lng
++                +"&radius="+ myRadius
++                +"&name=" + name
++                +"&key=" + "AIzaSyCHtm8IJLEqC_o9dxWI3dZkwtn6DsNaWcI");
++
++        Log.d("MYTEST", get.toString());
++
++        DefaultHttpClient client = new DefaultHttpClient();
++
++        try {
++             /*    검색할 문자열 서버에 전송       */
++             /* 데이터 보낸 뒤 서버에서 데이터를 받아오는 과정 */
++            HttpResponse response = client.execute(get);
++            HttpEntity resEntity = response.getEntity();
++            String jsonString = EntityUtils.toString(resEntity);
++            Log.d("json", jsonString);
++            JSONObject jsonObject = new JSONObject(jsonString);
++            String code = jsonObject.getString("status");
++            Log.d("json", code);
++            JSONArray jsonArray = jsonObject.getJSONArray("results");
++
++            for(int i = 0 ; i<jsonArray.length();i++){
++                Log.d("json",i+"번째 : "+jsonArray.getJSONObject(i).getString("name"));
++                Log.d("json",i+"번째 : "+jsonArray.getJSONObject(i).getJSONObject("geometry").getJSONObject("location").getDouble("lat"));
++                Log.d("json",i+"번째 : "+jsonArray.getJSONObject(i).getJSONObject("geometry").getJSONObject("location").getDouble("lng"));
++            }
++
++            return 0;
++        } catch (Exception e) {
++            e.printStackTrace();
++            Log.e("MYTEST","ERROR: "+e.toString());
++            client.getConnectionManager().shutdown();   // 연결 지연 종료
++            return -1;
++        }
++    }
++
++    private void setJson(HttpResponse response){
++
++    }
++}
+Index: app/src/main/java/com/example/prankster/sstest/MainActivity.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/java/com/example/prankster/sstest/MainActivity.java	(date 1473137522000)
++++ app/src/main/java/com/example/prankster/sstest/MainActivity.java	(date 1473152178000)
+@@ -21,6 +21,7 @@
+ 
+ import com.example.prankster.sstest.DataBase.DBHelper;
+ import com.example.prankster.sstest.Tracking.DetectActivitiesService;
++import com.example.prankster.sstest.Tracking.DetectHospitalService;
+ import com.google.android.gms.awareness.Awareness;
+ import com.google.android.gms.awareness.fence.AwarenessFence;
+ import com.google.android.gms.awareness.snapshot.DetectedActivityResult;
+@@ -48,11 +49,11 @@
+     private GoogleApiClient mApiClient;
+     DBHelper dbHelper;
+     // The fence key is how callback code determines which fence fired.
+-    private final String FENCE_KEY = "fence_key", TAG = getClass().getSimpleName();
++    private final String FENCE_KEY = "fence_key";
+     private PendingIntent mPendingIntent;
+ //    private FenceReceiver mFenceReceiver;
+     private LogFragment mLogFragment;
+-    private Button startBtn, stopBtn;
++    private Button startBtn, stopBtn, getHospitalFenceBtn, stopHospitalFenceBtn;
+     private FloatingActionButton fab;
+     private SupportMapFragment mapFragment;
+ 
+@@ -73,8 +74,11 @@
+     }
+ 
+     private void setLayout() {
+-        startBtn    = (Button)findViewById(R.id.buttonStart);
++        startBtn                      = (Button)findViewById(R.id.buttonStart);
+-        stopBtn     = (Button)findViewById(R.id.buttonStop);
++        stopBtn                       = (Button)findViewById(R.id.buttonStop);
++        getHospitalFenceBtn          = (Button)findViewById(R.id.buttonStartFence);
++        stopHospitalFenceBtn         = (Button)findViewById(R.id.buttonStopFence);
++
+         fab = (FloatingActionButton) findViewById(R.id.fab);
+         mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
+         mapFragment.getMapAsync(this);
+@@ -101,6 +105,25 @@
+             public void onClick(View v) {
+                 Toast.makeText(getApplicationContext(),"Service 끝",Toast.LENGTH_SHORT).show();
+                 Intent intent = new Intent(MainActivity.this,DetectActivitiesService.class);
++                stopService(intent);
++            }
++        });
++
++        getHospitalFenceBtn.setOnClickListener(new View.OnClickListener(){
++            @Override
++            public void onClick(View view){
++                Toast.makeText(getApplicationContext(),"Service 시작",Toast.LENGTH_SHORT).show();
++                Intent intent = new Intent(MainActivity.this, DetectHospitalService.class);
++                //Intent intent = new Intent(MainActivity.this,DetectActivitiesService.class);
++                startService(intent);
++            }
++        });
++
++        stopHospitalFenceBtn.setOnClickListener(new View.OnClickListener() {
++            @Override
++            public void onClick(View v) {
++                Toast.makeText(getApplicationContext(),"Service 끝",Toast.LENGTH_SHORT).show();
++                Intent intent = new Intent(MainActivity.this,DetectHospitalService.class);
+                 stopService(intent);
+             }
+         });
+\ No newline at end of file
+Index: app/src/main/res/layout/content_main.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/res/layout/content_main.xml	(date 1473137522000)
++++ app/src/main/res/layout/content_main.xml	(date 1473152178000)
+@@ -10,7 +10,6 @@
+     tools:showIn="@layout/activity_main">
+ 
+     <LinearLayout
+-        xmlns:android="http://schemas.android.com/apk/res/android"
+         android:orientation="vertical"
+         android:layout_width="match_parent"
+         android:layout_height="match_parent"
+@@ -32,6 +31,24 @@
+                 tools:layout_editor_absoluteY="-39dp"
+                 tools:layout_editor_absoluteX="62dp"
+                 android:id="@+id/buttonStop" />
++
++            <Button
++                android:text="Now Hos"
++                android:layout_gravity="right"
++                android:layout_width="wrap_content"
++                android:layout_height="wrap_content"
++                tools:layout_editor_absoluteY="-39dp"
++                tools:layout_editor_absoluteX="62dp"
++                android:id="@+id/buttonStartFence" />
++
++            <Button
++                android:text="Stop HOS"
++                android:layout_gravity="right"
++                android:layout_width="wrap_content"
++                android:layout_height="wrap_content"
++                tools:layout_editor_absoluteY="-39dp"
++                tools:layout_editor_absoluteX="62dp"
++                android:id="@+id/buttonStopFence" />
+         </LinearLayout>
+ 
+         <fragment
+@@ -53,7 +70,6 @@
+             android:layout_width="match_parent"
+             android:layout_height="match_parent" />
+     </LinearLayout>
+-
+ 
+ 
+ </android.support.constraint.ConstraintLayout>
+Index: app/src/main/res/values/strings.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/res/values/strings.xml	(date 1473137522000)
++++ app/src/main/res/values/strings.xml	(date 1473152178000)
+@@ -16,4 +16,5 @@
+     </string>
+ 
+     <string name="geofence_transition_notification_text">Click notification to return to app</string>
++    <string name="place_api_key">AIzaSyCHtm8IJLEqC_o9dxWI3dZkwtn6DsNaWcI</string>
+ </resources>
+Index: app/src/main/AndroidManifest.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/AndroidManifest.xml	(date 1473137522000)
++++ app/src/main/AndroidManifest.xml	(date 1473152178000)
+@@ -59,7 +59,7 @@
+             </intent-filter>
+         </activity>
+         <service android:name=".Tracking.DetectActivitiesService" />
+-        <service android:name=".Tracking.DetectedActivitiesIntentService" />
++        <service android:name=".Tracking.DetectHospitalService" />
+     </application>
+ 
+ </manifest>
+\ No newline at end of file
+Index: app/build.gradle
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/build.gradle	(date 1473137522000)
++++ app/build.gradle	(date 1473152178000)
+@@ -24,6 +24,7 @@
+     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
+         exclude group: 'com.android.support', module: 'support-annotations'
+     })
++    compile 'org.jbundle.util.osgi.wrapped:org.jbundle.util.osgi.wrapped.org.apache.http.client:4.1.2'
+     compile 'com.android.support:appcompat-v7:24.2.0'
+     compile 'com.android.support:design:24.2.0'
+     testCompile 'junit:junit:4.12'

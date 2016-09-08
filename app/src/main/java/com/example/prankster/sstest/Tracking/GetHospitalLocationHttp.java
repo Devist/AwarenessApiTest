@@ -33,7 +33,9 @@ public class GetHospitalLocationHttp {
                 + "&name=" + name
                 + "&key=" + "AIzaSyCHtm8IJLEqC_o9dxWI3dZkwtn6DsNaWcI");
 
-        Log.d("MYTEST", URL + "?location=" + lat + "," + lng
+        Log.d("MYTEST", "Place API 이용 내역 : "+
+                URL +
+                "?location=" + lat + "," + lng
                 + "&radius=" + myRadius
                 + "&name=" + name
                 + "&key=" + "AIzaSyCHtm8IJLEqC_o9dxWI3dZkwtn6DsNaWcI");
@@ -53,15 +55,17 @@ public class GetHospitalLocationHttp {
             Log.d("json", code);
             JSONArray jsonArray = jsonObject.getJSONArray("results");
 
-            HospitalInfo= new String[3][jsonArray.length()];
+            HospitalInfo= new String[3][jsonArray.length()+1];
             for (int i = 0; i < jsonArray.length(); i++) {
                 HospitalInfo[0][i] = jsonArray.getJSONObject(i).getString("name");
                 HospitalInfo[1][i] = String.valueOf(jsonArray.getJSONObject(i).getJSONObject("geometry").getJSONObject("location").getDouble("lat"));
                 HospitalInfo[2][i] = String.valueOf(jsonArray.getJSONObject(i).getJSONObject("geometry").getJSONObject("location").getDouble("lng"));
 
-                Log.d("json", i + "번째 : " + jsonArray.getJSONObject(i).getString("name"));
-                Log.d("json", i + "번째 : " + jsonArray.getJSONObject(i).getJSONObject("geometry").getJSONObject("location").getDouble("lat"));
-                Log.d("json", i + "번째 : " + jsonArray.getJSONObject(i).getJSONObject("geometry").getJSONObject("location").getDouble("lng"));
+                Log.d("json", i + "번째 : " + jsonArray.getJSONObject(i).getString("name") +
+                            "---"+
+                        jsonArray.getJSONObject(i).getJSONObject("geometry").getJSONObject("location").getDouble("lat") +
+                            "," +
+                        jsonArray.getJSONObject(i).getJSONObject("geometry").getJSONObject("location").getDouble("lng") );
             }
 
             return HospitalInfo;
@@ -73,7 +77,4 @@ public class GetHospitalLocationHttp {
         }
     }
 
-    private void setJson(HttpResponse response){
-
-    }
 }

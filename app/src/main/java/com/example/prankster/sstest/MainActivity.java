@@ -60,11 +60,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private GoogleApiClient mApiClient;
     DBHelper dbHelper;
     // The fence key is how callback code determines which fence fired.
-    private final String FENCE_KEY = "fence_key";
+    private final String FENCE_KEY = "detect_test_fence_key", TAG = getClass().getSimpleName();;
     private PendingIntent mPendingIntent;
     private FenceReceiver mFenceReceiver;
     private LogFragment mLogFragment;
-    private Button startBtn, stopBtn, getHospitalFenceBtn, stopHospitalFenceBtn, checkLocationFenceBtn;
+    private Button startBtn, stopBtn, getHospitalFenceBtn, stopHospitalFenceBtn;
     private FloatingActionButton fab;
     private SupportMapFragment mapFragment;
 
@@ -89,7 +89,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         stopBtn = (Button) findViewById(R.id.buttonStop);
         getHospitalFenceBtn = (Button) findViewById(R.id.buttonStartFence);
         stopHospitalFenceBtn = (Button) findViewById(R.id.buttonStopFence);
-        checkLocationFenceBtn = (Button) findViewById(R.id.buttonCheck);
+
+
 
         fab = (FloatingActionButton) findViewById(R.id.fab);
         mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
@@ -113,7 +114,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                         if (ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                             return;
                         }
-                        AwarenessFence walkingFence = LocationFence.in(37.523759, 126.926942, 100, 10000);
+                        AwarenessFence locationFence = LocationFence.in(37.523759, 126.926942, 100, 10000);
 
                         // Now that we have an interesting, complex condition, register the fence to receive
                         // callbacks.
@@ -122,7 +123,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                         Awareness.FenceApi.updateFences(
                                 mApiClient,
                                 new FenceUpdateRequest.Builder()
-                                        .addFence(FENCE_KEY, walkingFence, mPendingIntent)
+                                        .addFence(FENCE_KEY, locationFence, mPendingIntent)
                                         .build())
                                 .setResultCallback(new ResultCallback<Status>() {
                                     @Override
@@ -202,18 +203,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     default:
                         fenceStateStr = "unknown value";
                 }
-                mLogFragment.getLogView().println("Fence state: " + fenceStateStr);
+                mLogFragment.getLogView().println("Are you in SPH?: " + fenceStateStr);
             }
         }
     }
     private void setListener(){
 
-        checkLocationFenceBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-            }
-        });
         startBtn.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View view){
@@ -228,8 +223,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             @Override
             public void onClick(View v) {
                 Toast.makeText(getApplicationContext(),"Service 끝",Toast.LENGTH_SHORT).show();
-                Intent intent = new Intent(MainActivity.this,DetectActivitiesService.class);
-                stopService(intent);
+                Intent activityIntent = new Intent(MainActivity.this,DetectActivitiesService.class);
+                stopService(activityIntent);
+                Intent hospitalIntent = new Intent(MainActivity.this,DetectHospitalService.class);
+                stopService(hospitalIntent);
             }
         });
 
@@ -262,38 +259,38 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     @Override
     protected void onStop() {
-//        if (mFenceReceiver != null) {
-//            unregisterReceiver(mFenceReceiver);
-//        }
+        if (mFenceReceiver != null) {
+            unregisterReceiver(mFenceReceiver);
+        }
         super.onStop();
     }
 
     @Override
     protected void onPause() {
         // Unregister the fence:
-//        Awareness.FenceApi.updateFences(
-//                mApiClient,
-//                new FenceUpdateRequest.Builder()
-//                        .removeFence(FENCE_KEY)
-//                        .build())
-//                .setResultCallback(new ResultCallback<Status>() {
-//                    @Override
-//                    public void onResult(@NonNull Status status) {
-//                        if (status.isSuccess()) {
-//                            Log.i(TAG, "Fence was successfully unregistered.");
-//                        } else {
-//                            Log.e(TAG, "Fence could not be unregistered: " + status);
-//                        }
-//                    }
-//                });
+        Awareness.FenceApi.updateFences(
+                mApiClient,
+                new FenceUpdateRequest.Builder()
+                        .removeFence(FENCE_KEY)
+                        .build())
+                .setResultCallback(new ResultCallback<Status>() {
+                    @Override
+                    public void onResult(@NonNull Status status) {
+                        if (status.isSuccess()) {
+                            Log.i(TAG, "Fence was successfully unregistered.");
+                        } else {
+                            Log.e(TAG, "Fence could not be unregistered: " + status);
+                        }
+                    }
+                });
         super.onPause();
     }
 
     @Override
     public void onMapReady(GoogleMap map) {
-        // Add a marker in Sydney, Australia, and move the camera.
+
         LatLng sydney = new LatLng(37.523759, 126.926942);
-        map.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
+        map.addMarker(new MarkerOptions().position(sydney).title("Marker in SPH"));
         map.moveCamera(CameraUpdateFactory.newLatLng(sydney));
 
         int REQUEST_CODE_LOCATION = 2;
